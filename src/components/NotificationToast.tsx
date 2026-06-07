@@ -47,12 +47,10 @@ export const NotificationToast: React.FC = () => {
     }
   };
 
-  // Poll every 10 seconds (was 4s, no need to be so aggressive)
+  // Fetch once on login — no polling needed, NotificationCenter bell handles live updates
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000);
-    return () => clearInterval(interval);
   }, [token, isAuthenticated]);
 
   // Auto-dismiss toasts one by one
