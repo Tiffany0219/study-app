@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { avatarList, Avatar } from '../components/Avatar';
 import { User, Settings, Check, AlertCircle, Calendar, Upload, Trash2 } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 export const ProfilePage: React.FC = () => {
   const { user, updateProfile } = useAuth();
   
@@ -107,7 +109,7 @@ export const ProfilePage: React.FC = () => {
   // Format date
   const formatJoinedDate = (isoString?: string) => {
     if (!isoString) return '';
-    const d = new Date(isoString);
+    const d = parseDatabaseDate(isoString);
     return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
   };
 

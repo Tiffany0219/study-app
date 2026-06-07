@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Calendar, Clock, ChevronLeft, ChevronRight, X, Edit, AlignLeft } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 interface Activity {
   activityId: number;
   activityName: string;
@@ -142,7 +144,7 @@ export const TimelinePage: React.FC = () => {
   // Open Edit Modal
   const openEditModal = (act: Activity) => {
     const formatLocal = (isoStr: string) => {
-      const d = new Date(isoStr);
+      const d = parseDatabaseDate(isoStr);
       const pad = (num: number) => num.toString().padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
@@ -216,7 +218,7 @@ export const TimelinePage: React.FC = () => {
   // Format datetime-local to HH:MM format
   const formatTimeStr = (isoString: string) => {
     try {
-      const d = new Date(isoString);
+      const d = parseDatabaseDate(isoString);
       return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
     } catch {
       return isoString;

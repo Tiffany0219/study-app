@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/Avatar';
 import { Plus, Users, Compass, ChevronRight, Copy, Check, ArrowLeft, LogOut, Trash2, Award, History, ChevronDown, ChevronUp, Clock, AlignLeft, Calendar, Sparkles } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 interface GroupSummary {
   groupId: number;
   groupName: string;
@@ -786,7 +788,7 @@ export const GroupsPage: React.FC = () => {
                                   const conf = categoryConfig[act.category] || categoryConfig.study;
                                   const formatTimeStr = (isoString: string) => {
                                     try {
-                                      const d = new Date(isoString);
+                                      const d = parseDatabaseDate(isoString);
                                       return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
                                     } catch {
                                       return isoString;

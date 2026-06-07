@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { StudyChart } from '../components/StudyChart';
 import { BarChart2, Calendar, Award, BookOpen, Clock } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 interface RecordItem {
   record_id: number;
   subject: string;
@@ -69,7 +71,7 @@ export const StatisticsPage: React.FC = () => {
   // Format YYYY-MM-DD HH:MM:SS to YYYY/MM/DD HH:MM
   const formatDateTime = (isoString: string) => {
     try {
-      const d = new Date(isoString);
+      const d = parseDatabaseDate(isoString);
       const year = d.getFullYear();
       const month = (d.getMonth() + 1).toString().padStart(2, '0');
       const day = d.getDate().toString().padStart(2, '0');

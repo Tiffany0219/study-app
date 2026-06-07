@@ -4,6 +4,8 @@ import { Bell, Flame, UserPlus, Check, Sparkles, BookOpen, Clock, AlertTriangle,
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
 
+import { parseDatabaseDate } from '../utils/date';
+
 export const NotificationCenter: React.FC = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -180,7 +182,7 @@ export const NotificationCenter: React.FC = () => {
 
 const formatTime = (isoString: string) => {
   try {
-    const d = new Date(isoString);
+    const d = parseDatabaseDate(isoString);
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMins = Math.floor(diffMs / 60000);

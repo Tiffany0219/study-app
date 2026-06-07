@@ -12,6 +12,8 @@ interface PersonalTodo {
   targetDate: string;
 }
 
+import { parseDatabaseDate } from '../utils/date';
+
 export const HomePage: React.FC = () => {
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -155,7 +157,7 @@ export const HomePage: React.FC = () => {
   const formatCheckinTime = (isoString?: string) => {
     if (!isoString) return '';
     try {
-      const d = new Date(isoString);
+      const d = parseDatabaseDate(isoString);
       const hours = d.getHours().toString().padStart(2, '0');
       const minutes = d.getMinutes().toString().padStart(2, '0');
       return `${hours}:${minutes}`;

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/Avatar';
 import { Send, Users, Globe, Loader2, BookOpen } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 interface ChatMessage {
   messageId: number;
   content: string;
@@ -22,7 +24,7 @@ const POLL_MS = 3000; // poll every 3 seconds
 // ──── helper ──────────────────────────────────────────────────────────────────
 function formatTime(iso: string) {
   try {
-    const d = new Date(iso);
+    const d = parseDatabaseDate(iso);
     const h = d.getHours().toString().padStart(2, '0');
     const m = d.getMinutes().toString().padStart(2, '0');
     return `${h}:${m}`;
@@ -30,7 +32,7 @@ function formatTime(iso: string) {
 }
 
 function formatDateSep(iso: string) {
-  const d = new Date(iso);
+  const d = parseDatabaseDate(iso);
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
@@ -134,7 +136,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ roomType, roomId, currentUserId, to
   const grouped: Array<ChatMessage | string> = [];
   let lastDate = '';
   messages.forEach(msg => {
-    const d = new Date(msg.createdAt);
+    const d = parseDatabaseDate(msg.createdAt);
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     if (key !== lastDate) {
       grouped.push(formatDateSep(msg.createdAt));

@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/Avatar';
 import { ArrowLeft, Flame, Bell, Clock, AlignLeft, ShieldAlert } from 'lucide-react';
 
+import { parseDatabaseDate } from '../utils/date';
+
 interface Activity {
   activityId: number;
   activityName: string;
@@ -132,7 +134,7 @@ export const FriendTimelinePage: React.FC = () => {
 
   const formatTimeStr = (isoString: string) => {
     try {
-      const d = new Date(isoString);
+      const d = parseDatabaseDate(isoString);
       return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
     } catch {
       return isoString;
