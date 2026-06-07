@@ -143,7 +143,7 @@ export const StatisticsPage: React.FC = () => {
       )}
 
       {/* GitHub-Style Study Heatmap */}
-      <StudyHeatmap token={token} />
+      {token && <StudyHeatmap token={token} />}
 
       {/* Raw Study Session History Timeline */}
       <div className="glass-card" style={styles.historyCard}>

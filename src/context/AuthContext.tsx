@@ -11,6 +11,7 @@ export interface User {
   status?: string;
   autoStatus?: string;
   timeline_visibility?: string;
+  createdAt?: string;
 }
 
 interface AuthContextType {

@@ -460,7 +460,7 @@ export const GroupsPage: React.FC = () => {
     }
   };
 
-  const handleCheerMember = async (groupId: number, targetUserId: number, itemType: 'coffee' | 'cheese', targetUsername: string) => {
+  const handleCheerMember = async (groupId: number, targetUserId: number, itemType: 'coffee' | 'cheese') => {
     if (!token || cheeringUserId !== null) return;
     setCheeringUserId(targetUserId);
     try {
@@ -629,7 +629,7 @@ export const GroupsPage: React.FC = () => {
                             {!isMe && (
                               <div style={styles.roomCheerActionRow}>
                                 <button
-                                  onClick={() => handleCheerMember(groupDetail.groupId, m.userId, 'coffee', m.username)}
+                                  onClick={() => handleCheerMember(groupDetail.groupId, m.userId, 'coffee')}
                                   disabled={cheeringUserId === m.userId}
                                   style={styles.roomCheerBtn}
                                   title="送熱咖啡加油"
@@ -637,7 +637,7 @@ export const GroupsPage: React.FC = () => {
                                   ☕ 送咖啡
                                 </button>
                                 <button
-                                  onClick={() => handleCheerMember(groupDetail.groupId, m.userId, 'cheese', m.username)}
+                                  onClick={() => handleCheerMember(groupDetail.groupId, m.userId, 'cheese')}
                                   disabled={cheeringUserId === m.userId}
                                   style={styles.roomCheerBtn}
                                   title="送幸運起司打氣"

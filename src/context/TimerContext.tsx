@@ -78,7 +78,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const subjectRef = useRef(subject);
   const elapsedSecondsRef = useRef(elapsedSeconds);
   const startTimeRef = useRef<string | null>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     subjectRef.current = subject;

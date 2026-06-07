@@ -85,7 +85,7 @@ export const HomePage: React.FC = () => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const MAX_SIZE = 500;
