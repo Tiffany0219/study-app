@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch index.ts",
+    "build": "npm install",
     "start": "tsx index.ts",
     "install:server": "npm install"
   },
