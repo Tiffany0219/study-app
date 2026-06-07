@@ -16,8 +16,10 @@ export async function initDb() {
 
   console.log('SQLite Database connected at:', dbPath);
 
-  // Enable foreign keys
+  // Enable foreign keys, WAL mode, and busy timeout
   await db.run('PRAGMA foreign_keys = ON');
+  await db.run('PRAGMA journal_mode = WAL');
+  await db.run('PRAGMA busy_timeout = 5000');
 
   // Create Users table
   await db.exec(`
@@ -279,6 +281,16 @@ export async function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
     )
+  `);
+
+  // Create Indexes
+  await db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_study_records_user ON study_records(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_group ON notifications(group_id);
+    CREATE INDEX IF NOT EXISTS idx_timeline_activities_user ON timeline_activities(user_id);
+    CREATE INDEX IF NOT EXISTS idx_exams_deadlines_group ON exams_deadlines(group_id);
+    CREATE INDEX IF NOT EXISTS idx_group_todos_user_date ON group_todos(user_id, target_date);
   `);
 
   console.log('Database tables verified/created successfully.');

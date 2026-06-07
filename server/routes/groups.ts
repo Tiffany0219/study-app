@@ -36,31 +36,39 @@ router.post('/', authenticateToken as any, async (req: AuthRequest, res: Respons
       }
     }
 
-    // Insert group
-    const result = await db.run(
-      'INSERT INTO study_groups (group_name, description, owner_id, invite_code, daily_group_goal) VALUES (?, ?, ?, ?, ?)',
-      [name, description || '', req.userId, inviteCode, groupDailyGoal]
-    );
+    // Insert group and add creator as owner inside a transaction
+    await db.run('BEGIN TRANSACTION');
+    try {
+      const result = await db.run(
+        'INSERT INTO study_groups (group_name, description, owner_id, invite_code, daily_group_goal) VALUES (?, ?, ?, ?, ?)',
+        [name, description || '', req.userId, inviteCode, groupDailyGoal]
+      );
 
-    const groupId = result.lastID;
+      const groupId = result.lastID;
 
-    // Add creator as owner in group_members
-    await db.run(
-      'INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)',
-      [groupId, req.userId, 'owner']
-    );
+      // Add creator as owner in group_members
+      await db.run(
+        'INSERT INTO group_members (group_id, user_id, role) VALUES (?, ?, ?)',
+        [groupId, req.userId, 'owner']
+      );
 
-    return res.status(201).json({
-      message: '群組建立成功',
-      group: {
-        groupId,
-        groupName: name,
-        description,
-        inviteCode,
-        dailyGroupGoal: groupDailyGoal,
-        role: 'owner'
-      }
-    });
+      await db.run('COMMIT');
+
+      return res.status(201).json({
+        message: '群組建立成功',
+        group: {
+          groupId,
+          groupName: name,
+          description,
+          inviteCode,
+          dailyGroupGoal: groupDailyGoal,
+          role: 'owner'
+        }
+      });
+    } catch (dbErr) {
+      await db.run('ROLLBACK');
+      throw dbErr;
+    }
   } catch (error) {
     console.error('Create group error:', error);
     return res.status(500).json({ message: '建立群組時伺服器發生錯誤' });

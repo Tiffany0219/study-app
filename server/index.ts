@@ -20,9 +20,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Middlewares
+// Middlewares & Security Headers (Helmet Lite)
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
+  res.removeHeader('X-Powered-By');
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRouter);
@@ -41,6 +50,14 @@ app.use('/api/chat', chatRouter);
 // Basic Health Check Route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date() });
+});
+
+// Global Error Handler Middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Unhandled Error]:', err);
+  res.status(500).json({
+    message: '伺服器內部發生未知錯誤，我們正全力排查中。',
+  });
 });
 
 // Start server after initializing database
