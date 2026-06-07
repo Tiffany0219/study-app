@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: study-app-backend
+    env: node
+    region: singapore          # 亞洲區，台灣用戶較快
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true    # Render 自動產生隨機強密碼
+      - key: NODE_ENV
+        value: production
