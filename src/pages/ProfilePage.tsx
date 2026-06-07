@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { avatarList, Avatar } from '../components/Avatar';
-import { User, Settings, Check, AlertCircle, Calendar, Upload, Trash2 } from 'lucide-react';
+import { User, Settings, Check, AlertCircle, Calendar, Upload, Trash2, Loader2 } from 'lucide-react';
 
 import { parseDatabaseDate } from '../utils/date';
 
 export const ProfilePage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, token, updateProfile } = useAuth();
   
   const [username, setUsername] = useState(user?.username || '');
   const isPreset = avatarList.some(a => a.id === (user?.avatar || ''));
@@ -14,6 +14,28 @@ export const ProfilePage: React.FC = () => {
   const [customAvatar, setCustomAvatar] = useState(isPreset ? '' : (user?.avatar || ''));
   const [dailyGoal, setDailyGoal] = useState(user?.daily_goal || 60);
   const [timelineVisibility, setTimelineVisibility] = useState(user?.timeline_visibility || 'friends');
+  const [badges, setBadges] = useState<any[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAchievements = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/study/achievements', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBadges(data.badges || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch achievements:', err);
+      } finally {
+        setBadgesLoading(false);
+      }
+    };
+    fetchAchievements();
+  }, [token]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -314,6 +336,54 @@ export const ProfilePage: React.FC = () => {
           {loading ? '儲存中...' : '儲存變更'}
         </button>
       </form>
+
+      {/* Achievements Badge Gallery */}
+      <div className="glass-card animate-fade-in" style={styles.achievementsCard}>
+        <h3 style={styles.achievementsTitle}>🏆 我的成就勳章牆 (Badge Gallery)</h3>
+        {badgesLoading ? (
+          <div style={styles.badgesLoading}>
+            <Loader2 className="animate-spin" size={20} color="#fbbf24" style={{ animation: 'spin-slow 1.2s linear infinite' }} />
+            <span style={{ fontSize: '13px', color: '#7c6350', fontWeight: 600, marginLeft: '8px' }}>載入勳章牆中...</span>
+          </div>
+        ) : (
+          <div style={styles.badgesGrid}>
+            {badges.map((badge) => {
+              const unlocked = badge.unlocked;
+              const pct = Math.min(100, Math.round((badge.currentProgress / badge.targetProgress) * 100));
+              return (
+                <div 
+                  key={badge.id} 
+                  style={{
+                    ...styles.badgeCard,
+                    ...(unlocked ? styles.badgeUnlocked : styles.badgeLocked)
+                  }}
+                  className={unlocked ? "badge-hover-glow" : ""}
+                >
+                  <div style={styles.badgeIcon}>{badge.icon}</div>
+                  <div style={styles.badgeName}>{badge.name}</div>
+                  <div style={styles.badgeDesc}>{badge.desc}</div>
+                  
+                  {/* Progress bar for locked badge */}
+                  {!unlocked && (
+                    <div style={styles.badgeProgressCol}>
+                      <div style={styles.badgeProgressBar}>
+                        <div style={{ ...styles.badgeProgressFill, width: `${pct}%` }} />
+                      </div>
+                      <span style={styles.badgeProgressText}>
+                        {badge.currentProgress}/{badge.targetProgress}
+                      </span>
+                    </div>
+                  )}
+
+                  {unlocked && (
+                    <span style={styles.unlockedLabel}>已解鎖 ✅</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -448,5 +518,104 @@ const styles = {
   saveBtn: {
     width: '100%',
     marginTop: '8px',
+  },
+  achievementsCard: {
+    width: '100%',
+    padding: '24px 20px',
+    marginTop: '12px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '16px',
+  },
+  achievementsTitle: {
+    fontSize: '15px',
+    fontWeight: 800,
+    color: '#4a3728',
+    letterSpacing: '-0.3px',
+  },
+  badgesLoading: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '40px',
+  },
+  badgesGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+    gap: '14px',
+    width: '100%',
+  },
+  badgeCard: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    padding: '16px 12px',
+    borderRadius: '16px',
+    border: '2px solid',
+    textAlign: 'center' as const,
+    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    position: 'relative' as const,
+  },
+  badgeLocked: {
+    background: 'rgba(248, 241, 229, 0.4)',
+    borderColor: '#e8dfcc',
+    opacity: 0.65,
+  },
+  badgeUnlocked: {
+    background: '#ffffff',
+    borderColor: '#fcd34d',
+    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.08)',
+  },
+  badgeIcon: {
+    fontSize: '32px',
+    marginBottom: '8px',
+    userSelect: 'none' as const,
+  },
+  badgeName: {
+    fontSize: '13px',
+    fontWeight: 800,
+    color: '#4a3728',
+    marginBottom: '4px',
+  },
+  badgeDesc: {
+    fontSize: '10.5px',
+    color: '#7c6350',
+    lineHeight: 1.35,
+    marginBottom: '10px',
+    flex: 1,
+  },
+  badgeProgressCol: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    width: '100%',
+    gap: '4px',
+  },
+  badgeProgressBar: {
+    width: '100%',
+    height: '4px',
+    borderRadius: '2px',
+    background: '#e8dfcc',
+    overflow: 'hidden',
+  },
+  badgeProgressFill: {
+    height: '100%',
+    background: '#fde047',
+  },
+  badgeProgressText: {
+    fontSize: '9px',
+    color: '#a89280',
+    fontWeight: 700,
+    fontFamily: 'Fredoka, sans-serif',
+  },
+  unlockedLabel: {
+    fontSize: '10px',
+    fontWeight: 800,
+    color: '#d97706',
+    background: '#fef3c7',
+    padding: '2px 8px',
+    borderRadius: '8px',
+    border: '1px solid #fcd34d',
   }
 };

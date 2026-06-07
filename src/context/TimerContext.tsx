@@ -18,6 +18,8 @@ interface TimerContextType {
   elapsedSeconds: number;
   activeTrack: string;
   volume: number;
+  playingTracks: Record<string, boolean>;
+  trackVolumes: Record<string, number>;
   saveStatus: 'idle' | 'saving' | 'success' | 'error';
   errorMessage: string;
   rewardDetails: { exp: number; lvlUp: boolean; lvl: number } | null;
@@ -30,6 +32,8 @@ interface TimerContextType {
   setSubject: (sub: string) => void;
   setActiveTrack: (track: string) => void;
   setVolume: (vol: number) => void;
+  setPlayingTracks: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  setTrackVolumes: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   saveSession: (status: 'completed' | 'cancelled') => Promise<void>;
   clearSaveStatus: () => void;
 }
@@ -46,10 +50,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isPaused, setIsPaused] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Ambient Sound Player States
-  const [activeTrack, setActiveTrack] = useState('none');
-  const [volume, setVolume] = useState(0.4);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Ambient Sound Player States (Multi-track mixing)
+  const [playingTracks, setPlayingTracks] = useState<Record<string, boolean>>({
+    rain: false,
+    forest: false,
+    noise: false,
+    lofi: false,
+  });
+  const [trackVolumes, setTrackVolumes] = useState<Record<string, number>>({
+    rain: 0.4,
+    forest: 0.4,
+    noise: 0.4,
+    lofi: 0.4,
+  });
+  const audiosRef = useRef<Record<string, HTMLAudioElement>>({});
+
+  // Legacy fields for backward compatibility
+  const activeTrack = 'none';
+  const volume = 0.4;
 
   // Status for modal overlays
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -70,39 +88,43 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     elapsedSecondsRef.current = elapsedSeconds;
   }, [elapsedSeconds]);
 
-  // Audio Playback Effects
+  // Audio Playback Effects (Multi-track mixing)
   useEffect(() => {
-    if (activeTrack === 'none' || !isTimerActive || isPaused) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      return;
-    }
+    ambientTracks.forEach(track => {
+      if (track.id === 'none') return;
 
-    const track = ambientTracks.find(t => t.id === activeTrack);
-    if (track && track.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(track.url);
-        audioRef.current.loop = true;
-      } else if (audioRef.current.src !== track.url) {
-        audioRef.current.src = track.url;
-      }
-      audioRef.current.volume = volume;
-      audioRef.current.play().catch(err => console.log('Global audio play failed:', err));
-    }
+      const isPlaying = playingTracks[track.id] && isTimerActive && !isPaused;
+      const vol = trackVolumes[track.id] ?? 0.4;
 
+      if (isPlaying) {
+        if (!audiosRef.current[track.id]) {
+          const audio = new Audio(track.url);
+          audio.loop = true;
+          audiosRef.current[track.id] = audio;
+        }
+        const audio = audiosRef.current[track.id];
+        audio.volume = vol;
+        if (audio.paused) {
+          audio.play().catch(err => console.log(`Audio play error for ${track.id}:`, err));
+        }
+      } else {
+        if (audiosRef.current[track.id]) {
+          audiosRef.current[track.id].pause();
+        }
+      }
+    });
+  }, [playingTracks, trackVolumes, isTimerActive, isPaused]);
+
+  useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      // Clean up all audios on unmount
+      Object.values(audiosRef.current).forEach(audio => {
+        try {
+          audio.pause();
+        } catch (e) {}
+      });
     };
-  }, [activeTrack, isTimerActive, isPaused]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
+  }, []);
 
   // Reset timer if user logs out
   useEffect(() => {
@@ -254,6 +276,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     elapsedSeconds,
     activeTrack,
     volume,
+    playingTracks,
+    trackVolumes,
     saveStatus,
     errorMessage,
     rewardDetails,
@@ -269,8 +293,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
     setSecondsRemaining,
     setSubject,
-    setActiveTrack,
-    setVolume,
+    setActiveTrack: (t: string) => {},
+    setVolume: (v: number) => {},
+    setPlayingTracks,
+    setTrackVolumes,
     saveSession,
     clearSaveStatus
   };

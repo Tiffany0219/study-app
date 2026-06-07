@@ -244,6 +244,17 @@ router.get('/:id', authenticateToken as any, async (req: AuthRequest, res: Respo
       ORDER BY target_date ASC
     `, [groupId]);
 
+    // Get recent cheers (sent within last 15 seconds) in this group
+    const recentCheers = await db.all(`
+      SELECT n.notification_id as id, n.sender_id as senderId, n.user_id as targetUserId,
+             n.type, n.title, n.content, n.created_at as createdAt, u.username as senderName
+      FROM notifications n
+      JOIN users u ON n.sender_id = u.user_id
+      WHERE n.group_id = ? AND n.type = 'encourage'
+        AND datetime(n.created_at, 'localtime') >= datetime('now', 'localtime', '-15 seconds')
+      ORDER BY n.created_at DESC
+    `, [groupId]);
+
     return res.json({
       groupId: group.group_id,
       groupName: group.group_name,
@@ -253,7 +264,8 @@ router.get('/:id', authenticateToken as any, async (req: AuthRequest, res: Respo
       role: membership.role,
       groupTodayMinutes,
       members: membersWithProgress,
-      deadlines
+      deadlines,
+      recentCheers
     });
   } catch (error) {
     console.error('Get group details error:', error);

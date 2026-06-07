@@ -98,6 +98,8 @@ export const GroupsPage: React.FC = () => {
 
   // Group Live Study Room States
   const [cheeringUserId, setCheeringUserId] = useState<number | null>(null);
+  const [activeBubbles, setActiveBubbles] = useState<Array<{ id: number; userId: number; text: string }>>([]);
+  const shownCheerIdsRef = useRef<Set<number>>(new Set());
 
   const fetchGroups = async () => {
     if (!token) return;
@@ -124,6 +126,35 @@ export const GroupsPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setGroupDetail(data);
+
+        // Process recent interaction cheers for floaty bubbles
+        if (data.recentCheers && data.recentCheers.length > 0) {
+          const newCheers = data.recentCheers.filter(
+            (c: any) => !shownCheerIdsRef.current.has(c.id)
+          );
+
+          if (newCheers.length > 0) {
+            const bubblesToAdd = newCheers.map((c: any) => {
+              shownCheerIdsRef.current.add(c.id);
+              const isCoffee = c.title.includes('咖啡');
+              const actionText = isCoffee ? '☕ 送熱咖啡加油！' : '🧀 送幸運起司打氣！';
+              return {
+                id: c.id,
+                userId: c.targetUserId,
+                text: `${c.senderName} ${actionText}`
+              };
+            });
+
+            setActiveBubbles(prev => [...prev, ...bubblesToAdd]);
+
+            // Set timeout for each new bubble to fade out after 5 seconds
+            bubblesToAdd.forEach((b: any) => {
+              setTimeout(() => {
+                setActiveBubbles(prev => prev.filter(item => item.id !== b.id));
+              }, 5000);
+            });
+          }
+        }
       } else {
         setSelectedGroupId(null);
       }
@@ -216,9 +247,16 @@ export const GroupsPage: React.FC = () => {
 
   useEffect(() => {
     if (selectedGroupId !== null) {
+      shownCheerIdsRef.current.clear();
+      setActiveBubbles([]);
       fetchGroupDetail(selectedGroupId);
+      const interval = setInterval(() => {
+        fetchGroupDetail(selectedGroupId);
+      }, 10000);
+      return () => clearInterval(interval);
     } else {
       setGroupDetail(null);
+      setActiveBubbles([]);
     }
   }, [selectedGroupId]);
 
@@ -435,7 +473,19 @@ export const GroupsPage: React.FC = () => {
         body: JSON.stringify({ itemType })
       });
       if (res.ok) {
-        alert(`已成功送給【${targetUsername}】一${itemType === 'coffee' ? '杯熱咖啡 ☕' : '塊幸運起司 🧀'}！`);
+        // Add bubble locally immediately for instant feedback
+        const localId = Date.now();
+        const actionText = itemType === 'coffee' ? '☕ 送熱咖啡加油！' : '🧀 送幸運起司打氣！';
+        
+        setActiveBubbles(prev => [...prev, {
+          id: localId,
+          userId: targetUserId,
+          text: `我 ${actionText}`
+        }]);
+
+        setTimeout(() => {
+          setActiveBubbles(prev => prev.filter(item => item.id !== localId));
+        }, 5000);
       } else {
         const data = await res.json();
         alert(data.message || '送出打氣失敗');
@@ -559,8 +609,14 @@ export const GroupsPage: React.FC = () => {
                     ) : (
                       studyingMembers.map((m) => {
                         const isMe = m.userId === user?.userId;
+                        const memberBubbles = activeBubbles.filter((b) => b.userId === m.userId);
                         return (
                           <div key={m.userId} style={styles.roomMemberAvatarCard} className="glow-border">
+                            {memberBubbles.map((b) => (
+                              <div key={b.id} className="bubble-float-animate" style={styles.bubbleFloat}>
+                                {b.text}
+                              </div>
+                            ))}
                             <Avatar id={m.avatar} size={40} glow />
                             <div style={styles.roomMemberInfoCol}>
                               <div style={styles.roomMemberNameRow}>
@@ -606,8 +662,14 @@ export const GroupsPage: React.FC = () => {
                     ) : (
                       restingMembers.map((m) => {
                         const isMe = m.userId === user?.userId;
+                        const memberBubbles = activeBubbles.filter((b) => b.userId === m.userId);
                         return (
                           <div key={m.userId} style={styles.roomMemberRestCard}>
+                            {memberBubbles.map((b) => (
+                              <div key={b.id} className="bubble-float-animate" style={styles.bubbleFloat}>
+                                {b.text}
+                              </div>
+                            ))}
                             <Avatar id={m.avatar} size={36} />
                             <div style={styles.roomMemberInfoCol}>
                               <div style={styles.roomMemberNameRow}>
@@ -1982,6 +2044,24 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
+    position: 'relative' as const,
+  },
+  bubbleFloat: {
+    position: 'absolute' as const,
+    bottom: '50px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'linear-gradient(135deg, #fef3c7, #fde047)',
+    border: '1.5px solid #f59e0b',
+    borderRadius: '12px',
+    padding: '4px 8px',
+    color: '#4a3728',
+    fontSize: '11px',
+    fontWeight: 800,
+    whiteSpace: 'nowrap' as const,
+    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.18)',
+    zIndex: 99,
+    pointerEvents: 'none' as const,
   },
   roomMemberInfoCol: {
     display: 'flex',

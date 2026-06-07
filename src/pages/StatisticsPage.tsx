@@ -4,6 +4,7 @@ import { StudyChart } from '../components/StudyChart';
 import { BarChart2, Calendar, Award, BookOpen, Clock } from 'lucide-react';
 
 import { parseDatabaseDate } from '../utils/date';
+import { StudyHeatmap } from '../components/StudyHeatmap';
 
 interface RecordItem {
   record_id: number;
@@ -140,6 +141,9 @@ export const StatisticsPage: React.FC = () => {
           timelineActivities={timelineActivities}
         />
       )}
+
+      {/* GitHub-Style Study Heatmap */}
+      <StudyHeatmap token={token} />
 
       {/* Raw Study Session History Timeline */}
       <div className="glass-card" style={styles.historyCard}>

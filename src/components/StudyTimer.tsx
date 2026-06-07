@@ -16,8 +16,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ subject, onRecordSaved }
     isTimerActive,
     isPaused,
     elapsedSeconds,
-    activeTrack,
-    volume,
+    playingTracks,
+    trackVolumes,
     saveStatus,
     errorMessage,
     rewardDetails,
@@ -26,8 +26,8 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ subject, onRecordSaved }
     resumeTimer,
     resetTimer,
     setTargetMinutes,
-    setActiveTrack,
-    setVolume,
+    setPlayingTracks,
+    setTrackVolumes,
     saveSession,
     clearSaveStatus
   } = useTimer();
@@ -170,38 +170,60 @@ export const StudyTimer: React.FC<StudyTimerProps> = ({ subject, onRecordSaved }
         </div>
       </div>
 
-      {/* Cozy Lofi / White Noise Player Card */}
+      {/* Cozy Lofi / White Noise Player Card (Mixer) */}
       <div className="glass-card animate-fade-in" style={styles.soundPlayerCard}>
         <div style={styles.soundPlayerHeader}>
-          <span style={styles.soundPlayerTitle}>🎧 專注白噪音與環境音</span>
+          <span style={styles.soundPlayerTitle}>🎧 專注環境音混音器 (Ambient Mixer)</span>
         </div>
         <div style={styles.soundPlayerControls}>
-          <select
-            value={activeTrack}
-            onChange={(e) => setActiveTrack(e.target.value)}
-            style={styles.soundSelect}
-          >
-            {ambientTracks.map((track) => (
-              <option key={track.id} value={track.id}>
-                {track.name}
-              </option>
-            ))}
-          </select>
-          {activeTrack !== 'none' && (
-            <div style={styles.volumeWrapper}>
-              <span style={styles.volumeLabel}>音量</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={volume}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                style={styles.volumeSlider}
-              />
-              <span style={styles.volumePercent}>{Math.round(volume * 100)}%</span>
-            </div>
-          )}
+          {ambientTracks
+            .filter((t) => t.id !== 'none')
+            .map((track) => {
+              const isPlaying = playingTracks[track.id] || false;
+              const vol = trackVolumes[track.id] ?? 0.4;
+              return (
+                <div key={track.id} style={styles.mixerRow}>
+                  <button
+                    onClick={() =>
+                      setPlayingTracks((prev) => ({
+                        ...prev,
+                        [track.id]: !isPlaying,
+                      }))
+                    }
+                    style={{
+                      ...styles.mixerBtn,
+                      background: isPlaying
+                        ? 'linear-gradient(135deg, #fde047, #fbbf24)'
+                        : '#ffffff',
+                      borderColor: isPlaying ? '#f59e0b' : '#ecdcb9',
+                      color: isPlaying ? '#4a3728' : '#7c6350',
+                    }}
+                  >
+                    <span>{track.name}</span>
+                    <span>{isPlaying ? 'ON 🟢' : 'OFF'}</span>
+                  </button>
+                  {isPlaying && (
+                    <div style={styles.volumeWrapper}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={vol}
+                        onChange={(e) =>
+                          setTrackVolumes((prev) => ({
+                            ...prev,
+                            [track.id]: Number(e.target.value),
+                          }))
+                        }
+                        style={styles.volumeSlider}
+                      />
+                      <span style={styles.volumePercent}>{Math.round(vol * 100)}%</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
 
@@ -514,56 +536,65 @@ const styles = {
   },
   soundPlayerCard: {
     width: '100%',
-    maxWidth: '280px',
-    padding: '12px 16px',
+    maxWidth: '300px',
+    padding: '16px',
     marginBottom: '24px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px',
+    gap: '12px',
   },
   soundPlayerHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: '4px',
   },
   soundPlayerTitle: {
-    fontSize: '12.5px',
+    fontSize: '13px',
     color: '#7c6350',
     fontWeight: 800,
   },
   soundPlayerControls: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '10px',
+    gap: '12px',
   },
-  soundSelect: {
-    padding: '8px 10px',
+  mixerRow: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+    width: '100%',
+  },
+  mixerBtn: {
+    padding: '8px 12px',
     borderRadius: '10px',
     border: '2px solid #ecdcb9',
-    outline: 'none',
-    fontSize: '12px',
-    background: '#ffffff',
-    color: '#4a3728',
+    fontSize: '12.5px',
     fontWeight: 700,
     cursor: 'pointer',
+    textAlign: 'left' as const,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    transition: 'all 0.15s ease',
+    boxShadow: '0 2px 4px rgba(139, 92, 26, 0.03)',
   },
   volumeWrapper: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-  },
-  volumeLabel: {
-    fontSize: '11px',
-    color: '#7c6350',
-    fontWeight: 700,
+    padding: '0 6px 4px 6px',
+    width: '100%',
   },
   volumeSlider: {
     flex: 1,
     accentColor: '#fbbf24',
     cursor: 'pointer',
+    height: '6px',
+    borderRadius: '3px',
   },
   volumePercent: {
-    fontSize: '10.5px',
+    fontSize: '11px',
     color: '#a89280',
     fontWeight: 700,
     fontFamily: 'Fredoka, sans-serif',
